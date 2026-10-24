@@ -15,42 +15,31 @@ RSpec.describe User do
 
   it "has expected attributes" do
     expect(user).to have_attributes(
-      id: a_string_matching(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/),
-      created_at: be_a(ActiveSupport::TimeWithZone),
-      updated_at: be_a(ActiveSupport::TimeWithZone),
+      id: nil,
       first_name: "Ada",
       last_name: "Lovelace",
       date_of_birth: Date.new(1990, 12, 10)
     )
   end
 
-  it "generates a different id for each user" do
-    expect(user.id).not_to eq(described_class.new(attributes).id)
+  it "allows only the user's details to be written" do
+    expect(User::WRITABLE_ATTRIBUTES).to eq(%i[first_name last_name date_of_birth])
   end
 
-  describe "timestamps" do
-    before { freeze_time }
+  describe "id" do
+    context "when id is provided" do
+      let(:attributes) { super().merge(id: 1) }
 
-    it "sets created_at and updated_at to the current time" do
-      expect(user).to have_attributes(created_at: Time.current, updated_at: Time.current)
-    end
-
-    context "when created_at is provided" do
-      let(:created_at) { 1.day.ago }
-      let(:attributes) { super().merge(created_at:) }
-
-      it "defaults updated_at to created_at" do
-        expect(user).to have_attributes(created_at:, updated_at: created_at)
+      it "keeps the provided id" do
+        expect(user.id).to eq(1)
       end
     end
 
-    context "when both timestamps are provided" do
-      let(:created_at) { 2.days.ago }
-      let(:updated_at) { 1.day.ago }
-      let(:attributes) { super().merge(created_at:, updated_at:) }
+    context "when id is provided as a string" do
+      let(:attributes) { super().merge(id: "1") }
 
-      it "keeps the provided timestamps" do
-        expect(user).to have_attributes(created_at:, updated_at:)
+      it "casts it to an integer" do
+        expect(user.id).to eq(1)
       end
     end
   end
