@@ -11,6 +11,8 @@ class User
   attribute :first_name, :string
   attribute :last_name, :string
   attribute :date_of_birth, :date
+  attribute :created_at, :datetime, default: -> { Time.current }
+  attribute :updated_at, :datetime
 
   normalizes :first_name, :last_name, with: ->(name) { name.is_a?(String) ? name.strip : name }
 
@@ -18,6 +20,11 @@ class User
   validate :name_fields_must_be_strings
 
   validate :date_of_birth_must_be_reasonable_iso8601_date
+
+  def initialize(...)
+    super
+    self.updated_at ||= created_at
+  end
 
   private
 
