@@ -3,6 +3,8 @@ class User
   include ActiveModel::Attributes
   include ActiveModel::Attributes::Normalization
 
+  WRITABLE_ATTRIBUTES = %i[first_name last_name date_of_birth]
+
   MAX_NAME_LENGTH = 50
   MINIMUM_DATE_OF_BIRTH = Date.new(1900, 1, 1)
   ISO_8601_DATE = /\A\d{4}-\d{2}-\d{2}\z/
