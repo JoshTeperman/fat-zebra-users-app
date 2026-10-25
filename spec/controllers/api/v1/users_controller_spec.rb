@@ -10,18 +10,29 @@ RSpec.describe "Api::V1::UsersController", type: :request do
   before { allow(UserRepository).to receive(:instance).and_return(repository) }
 
   describe "GET /api/v1/users" do
-    before do
-      repository.create(user_attributes)
-      repository.create(user_attributes_2)
-      get "/api/v1/users"
+    context "when users are stored" do
+      before do
+        repository.create(user_attributes)
+        repository.create(user_attributes_2)
+        get "/api/v1/users"
+      end
+
+      it "returns the serialized users", :aggregate_failures do
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body["data"]).to eq([
+          serialized_user,
+          serialized_user_2
+        ])
+      end
     end
 
-    it "returns the serialized users", :aggregate_failures do
-      expect(response).to have_http_status(:ok)
-      expect(response.parsed_body["data"]).to eq([
-        serialized_user,
-        serialized_user_2
-      ])
+    context "when no users are stored" do
+      before { get "/api/v1/users" }
+
+      it "returns an empty list", :aggregate_failures do
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body["data"]).to eq([])
+      end
     end
   end
 
@@ -43,7 +54,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
         expect(response).to have_http_status(:bad_request)
       end
 
-      it "returns the error details", :aggregate_failures do
+      it "returns the error details" do
         expect(response.parsed_body["errors"]).to include(
           a_hash_including("code" => "parameter_missing", "field" => "user", "message" => "is required and must be a JSON object")
         )
@@ -53,11 +64,11 @@ RSpec.describe "Api::V1::UsersController", type: :request do
     context "when the params includes attributes that aren't writable" do
       let(:params) { { user: user_attributes.merge(id: 99, admin: true) } }
 
-      it "returns an unprocessable entity error", :aggregate_failures do
-        expect(response).to have_http_status(:unprocessable_entity)
+      it "returns an unprocessable entity error" do
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "returns the error details", :aggregate_failures do
+      it "returns the error details" do
         expect(response.parsed_body["errors"]).to include(
           a_hash_including("code" => "unknown_field", "field" => "id", "message" => "is not a recognised field"),
           a_hash_including("code" => "unknown_field", "field" => "admin", "message" => "is not a recognised field")
@@ -69,7 +80,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
       let(:params) { { user: user_attributes.merge(first_name: []) } }
 
       it "returns the validation errors", :aggregate_failures do
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body["errors"]).to contain_exactly(
           a_hash_including("code" => "invalid_type", "field" => "first_name", "message" => "must be a string")
         )
@@ -80,11 +91,11 @@ RSpec.describe "Api::V1::UsersController", type: :request do
       end
     end
 
-    context "when the attributes fail user validations", :aggregate_failures do
+    context "when the attributes fail user validations" do
       let(:params) { { user: user_attributes.merge(first_name: "", date_of_birth: "10/12/1990") } }
 
       it "returns the validation errors", :aggregate_failures do
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body["errors"]).to contain_exactly(
           a_hash_including("code" => "blank", "field" => "first_name", "message" => "can't be blank"),
           a_hash_including("code" => "invalid_format", "field" => "date_of_birth", "message" => "must be a date in YYYY-MM-DD format")
@@ -102,6 +113,52 @@ RSpec.describe "Api::V1::UsersController", type: :request do
       it "returns bad request" do
         expect(response).to have_http_status(:bad_request)
       end
+    end
+
+    context "when the user object is null" do
+      let(:params) { { user: nil } }
+
+      it "returns bad request" do
+        expect(response).to have_http_status(:bad_request)
+      end
+    end
+
+    context "when the user object is empty" do
+      let(:params) { { user: {} } }
+
+      it "returns bad request" do
+        expect(response).to have_http_status(:bad_request)
+      end
+    end
+
+    [ 123, true ].each do |value|
+      context "when a name is a #{value.class}" do
+        let(:params) { { user: user_attributes.merge(first_name: value) } }
+
+        it "returns the validation errors", :aggregate_failures do
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(response.parsed_body["errors"]).to contain_exactly(
+            a_hash_including("code" => "not_a_string", "field" => "first_name", "message" => "must be a string")
+          )
+        end
+
+        it "doesn't create the user" do
+          expect(repository.all).to be_empty
+        end
+      end
+    end
+  end
+
+  describe "malformed JSON" do
+    before do
+      post "/api/v1/users", params: '{"user":{"first_name":', headers: { "CONTENT_TYPE" => "application/json" }
+    end
+
+    it "returns bad request with the error details", :aggregate_failures do
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body["errors"]).to contain_exactly(
+        a_hash_including("code" => "malformed_json", "field" => "body", "message" => "is not valid JSON")
+      )
     end
   end
 
@@ -122,8 +179,11 @@ RSpec.describe "Api::V1::UsersController", type: :request do
     context "when user does not exist" do
       before { patch "/api/v1/users/999", params: params, as: :json }
 
-      it "returns not found" do
+      it "returns not found with the error details", :aggregate_failures do
         expect(response).to have_http_status(:not_found)
+        expect(response.parsed_body["errors"]).to contain_exactly(
+          a_hash_including("code" => "not_found", "field" => "id", "message" => "does not match an existing record")
+        )
       end
     end
 
@@ -131,7 +191,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
       let(:params) { { user: { date_of_birth: "10/12/1990" } } }
 
       it "returns the validation errors", :aggregate_failures do
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body["errors"]).to contain_exactly(
           a_hash_including("code" => "invalid_format", "field" => "date_of_birth", "message" => "must be a date in YYYY-MM-DD format")
         )
@@ -146,10 +206,10 @@ RSpec.describe "Api::V1::UsersController", type: :request do
       let(:params) { { user: { id: 99, admin: true } } }
 
       it "returns unprocessable entity status" do
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "returns an error for the unknown fields", :aggregate_failures do
+      it "returns an error for the unknown fields" do
         expect(response.parsed_body["errors"]).to include(
           a_hash_including("code" => "unknown_field", "field" => "id"),
           a_hash_including("code" => "unknown_field", "field" => "admin")

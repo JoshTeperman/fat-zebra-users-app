@@ -12,8 +12,11 @@ RSpec.describe UserRepository do
   end
 
   describe ".instance" do
+    let!(:user) { described_class.instance.create(user_attributes) }
+
+    after { described_class.instance.send(:store).delete(user.id) }
+
     it "shares stored users between accesses" do
-      user = described_class.instance.create(user_attributes)
       expect(described_class.instance.all.map(&:id)).to include(user.id)
     end
   end
@@ -159,7 +162,7 @@ RSpec.describe UserRepository do
     context "when the changes include non-writable fields" do
       let(:changes) { { id: 99, first_name: "Harrison", admin: true } }
 
-      it "patches only the writable fields", :aggregate_failures do
+      it "patches only the writable fields" do
         expect(subject).to have_attributes(id: existing.id, first_name: "Harrison")
       end
     end

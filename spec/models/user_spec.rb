@@ -58,21 +58,21 @@ RSpec.describe User do
     before { user.validate }
 
     %i[first_name last_name].each do |name_field|
-      context "when #{name_field} is missing", :aggregate_failures do
+      context "when #{name_field} is missing" do
         let(:attributes) { super().except(name_field) }
 
         it { is_expected.not_to be_valid }
         it { expect(user.errors).to be_of_kind(name_field, :blank) }
       end
 
-      context "when #{name_field} is only whitespace", :aggregate_failures do
+      context "when #{name_field} is only whitespace" do
         let(:attributes) { super().merge(name_field => "   ") }
 
         it { is_expected.not_to be_valid }
         it { expect(user.errors).to be_of_kind(name_field, :blank) }
       end
 
-      context "when #{name_field} is longer than MAX_NAME_LENGTH", :aggregate_failures do
+      context "when #{name_field} is longer than MAX_NAME_LENGTH" do
         let(:attributes) { super().merge(name_field => "a" * (User::MAX_NAME_LENGTH + 1)) }
 
         it { is_expected.not_to be_valid }
@@ -85,7 +85,7 @@ RSpec.describe User do
         it { is_expected.to be_valid }
       end
 
-      context "when #{name_field} is not a string", :aggregate_failures do
+      context "when #{name_field} is not a string" do
         let(:attributes) { super().merge(name_field => 123) }
 
         it { is_expected.not_to be_valid }
@@ -93,35 +93,35 @@ RSpec.describe User do
       end
     end
 
-    context "when date_of_birth is missing", :aggregate_failures do
+    context "when date_of_birth is missing" do
       let(:attributes) { super().except(:date_of_birth) }
 
       it { is_expected.not_to be_valid }
       it { expect(user.errors).to be_of_kind(:date_of_birth, :blank) }
     end
 
-    context "when date_of_birth is an empty string", :aggregate_failures do
+    context "when date_of_birth is an empty string" do
       let(:attributes) { super().merge(date_of_birth: "") }
 
       it { is_expected.not_to be_valid }
       it { expect(user.errors).to be_of_kind(:date_of_birth, :blank) }
     end
 
-    context "when date_of_birth is not in ISO 8601 format", :aggregate_failures do
+    context "when date_of_birth is not in ISO 8601 format" do
       let(:attributes) { super().merge(date_of_birth: "10/12/1990") }
 
       it { is_expected.not_to be_valid }
       it { expect(user.errors).to be_of_kind(:date_of_birth, :invalid_format) }
     end
 
-    context "when date_of_birth is not a real calendar date", :aggregate_failures do
+    context "when date_of_birth is not a real calendar date" do
       let(:attributes) { super().merge(date_of_birth: "1990-02-30") }
 
       it { is_expected.not_to be_valid }
       it { expect(user.errors).to be_of_kind(:date_of_birth, :invalid_format) }
     end
 
-    context "when date_of_birth is not a string or date", :aggregate_failures do
+    context "when date_of_birth is not a string or date" do
       let(:attributes) { super().merge(date_of_birth: 19901210) }
 
       it { is_expected.not_to be_valid }
@@ -134,7 +134,7 @@ RSpec.describe User do
       it { is_expected.to be_valid }
     end
 
-    context "when date_of_birth is in the future", :aggregate_failures do
+    context "when date_of_birth is in the future" do
       let(:attributes) { super().merge(date_of_birth: Date.current.tomorrow.iso8601) }
 
       it { is_expected.not_to be_valid }
@@ -147,7 +147,7 @@ RSpec.describe User do
       it { is_expected.to be_valid }
     end
 
-    context "when date_of_birth is earlier than MINIMUM_DATE_OF_BIRTH", :aggregate_failures do
+    context "when date_of_birth is earlier than MINIMUM_DATE_OF_BIRTH" do
       let(:attributes) { super().merge(date_of_birth: User::MINIMUM_DATE_OF_BIRTH.yesterday.iso8601) }
 
       it { is_expected.not_to be_valid }

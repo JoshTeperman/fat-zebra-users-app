@@ -15,7 +15,7 @@ module Api
 
       def update
         user = user_repository.update(params[:id], user_params)
-        return head :not_found unless user
+        not_found! unless user
         return render_validation_errors(user) if user.errors.any?
 
         render_data(UserSerializer.call(user))
