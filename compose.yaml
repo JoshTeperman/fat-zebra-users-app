@@ -1,0 +1,7 @@
+services:
+  api:
+    build: .
+    environment:
+      RAILS_ENV: development
+    ports:
+      - "127.0.0.1:3000:3000"
