@@ -1,6 +1,8 @@
 module Api
   module V1
     class BaseController < ActionController::API
+      include ActionController::HttpAuthentication::Token::ControllerMethods
+
       class InvalidParameters < StandardError
         attr_reader :errors
 
@@ -19,7 +21,14 @@ module Api
 
       wrap_parameters false
 
+      before_action :authenticate!
+
       private
+
+      def authenticate!
+        @current_client = authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
+        render_unauthorized unless @current_client
+      end
 
       def render_data(resource, status: :ok)
         render json: { data: resource }, status: status
@@ -81,6 +90,14 @@ module Api
         render_errors(
           [ { code: "not_found", field: "id", message: "does not match an existing record" } ],
           status: :not_found
+        )
+      end
+
+      def render_unauthorized
+        response.headers["WWW-Authenticate"] = "Bearer"
+        render_errors(
+          [ { code: "unauthorized", field: "authorization", message: "a valid bearer token is required" } ],
+          status: :unauthorized
         )
       end
     end

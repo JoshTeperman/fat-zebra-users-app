@@ -14,7 +14,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
       before do
         repository.create(user_attributes)
         repository.create(user_attributes_2)
-        get "/api/v1/users"
+        get "/api/v1/users", headers: auth_headers
       end
 
       it "returns the serialized users", :aggregate_failures do
@@ -27,7 +27,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
     end
 
     context "when no users are stored" do
-      before { get "/api/v1/users" }
+      before { get "/api/v1/users", headers: auth_headers }
 
       it "returns an empty list", :aggregate_failures do
         expect(response).to have_http_status(:ok)
@@ -39,7 +39,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
   describe "POST /api/v1/users" do
     let(:params) { { user: user_attributes } }
 
-    before { post "/api/v1/users", params: params, as: :json }
+    before { post "/api/v1/users", params: params, headers: auth_headers, as: :json }
 
     it "creates the user", :aggregate_failures do
       expect(response).to have_http_status(:created)
@@ -151,7 +151,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
 
   describe "malformed JSON" do
     before do
-      post "/api/v1/users", params: '{"user":{"first_name":', headers: { "CONTENT_TYPE" => "application/json" }
+      post "/api/v1/users", params: '{"user":{"first_name":', headers: auth_headers.merge("CONTENT_TYPE" => "application/json")
     end
 
     it "returns bad request with the error details", :aggregate_failures do
@@ -167,7 +167,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
 
     before do
       repository.create(user_attributes)
-      patch "/api/v1/users/1", params: params, as: :json
+      patch "/api/v1/users/1", params: params, headers: auth_headers, as: :json
     end
 
     it "updates the user", :aggregate_failures do
@@ -177,7 +177,7 @@ RSpec.describe "Api::V1::UsersController", type: :request do
     end
 
     context "when user does not exist" do
-      before { patch "/api/v1/users/999", params: params, as: :json }
+      before { patch "/api/v1/users/999", params: params, headers: auth_headers, as: :json }
 
       it "returns not found with the error details", :aggregate_failures do
         expect(response).to have_http_status(:not_found)
