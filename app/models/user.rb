@@ -9,7 +9,6 @@ class User
   MINIMUM_DATE_OF_BIRTH = Date.new(1900, 1, 1)
   ISO_8601_DATE = /\A\d{4}-\d{2}-\d{2}\z/
 
-
   attribute :id, :integer
   attribute :first_name, :string
   attribute :last_name, :string
