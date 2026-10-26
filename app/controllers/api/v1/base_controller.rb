@@ -28,14 +28,17 @@ module Api
 
       private
 
+      def auth_client
+        @auth_client ||= authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
+      end
+
       def authenticate!
-        @current_client = authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
-        render_unauthorized unless @current_client
+        render_unauthorized unless auth_client
       end
 
       def authorize!
         scope = required_scope
-        render_forbidden(scope) unless scope && @current_client.scopes.include?(scope)
+        render_forbidden(scope) unless scope && auth_client.scopes.include?(scope)
       end
 
       def required_scope
