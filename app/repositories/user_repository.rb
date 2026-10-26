@@ -1,6 +1,6 @@
 class UserRepository
   class << self
-    attr_reader :instance
+    attr_accessor :instance
   end
 
   def initialize
@@ -56,7 +56,4 @@ class UserRepository
   def copy_attributes(attrs)
     attrs.transform_values { |value| value.duplicable? ? value.dup : value }
   end
-
-  # Built when the class loads (at boot in production, via eager loading) so request threads can't race to create separate instances.
-  @instance = new
 end

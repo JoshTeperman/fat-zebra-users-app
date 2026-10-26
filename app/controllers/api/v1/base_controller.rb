@@ -11,7 +11,6 @@ module Api
           super("Invalid parameters")
         end
       end
-
       class NotFound < StandardError; end
 
       rescue_from InvalidParameters, with: :render_invalid_parameters
@@ -26,8 +25,8 @@ module Api
       private
 
       def authenticate!
-        @current_client = authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
-        render_unauthorized unless @current_client
+        client = authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
+        render_unauthorized unless client
       end
 
       def render_data(resource, status: :ok)

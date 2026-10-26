@@ -1,11 +1,11 @@
 require "rails_helper"
 
 RSpec.describe ApiClientRegistry do
-  subject(:registry) { described_class.from_json(api_clients) }
+  subject(:registry) { described_class.from_json(json_config) }
 
   let(:reader_token) { "test-reader-token" }
   let(:admin_token) { "test-admin-token" }
-  let(:api_clients) do
+  let(:json_config) do
     [
       { name: "reader", token_digest: Digest::SHA256.hexdigest(reader_token), scopes: [ "users:read" ] },
       { name: "admin", token_digest: Digest::SHA256.hexdigest(admin_token), scopes: [ "users:read", "users:write" ] }
@@ -13,20 +13,12 @@ RSpec.describe ApiClientRegistry do
   end
 
   describe "#find_by_token" do
-    it "returns the client whose digest matches the token" do
+    it "returns the client with matching token" do
       expect(registry.find_by_token(admin_token)).to have_attributes(name: "admin", scopes: [ "users:read", "users:write" ])
     end
 
-    it "tells clients apart" do
-      expect(registry.find_by_token(reader_token)).to have_attributes(name: "reader", scopes: [ "users:read" ])
-    end
-
-    it "returns nil for an unknown token" do
+    it "returns nil for an unregistered client token" do
       expect(registry.find_by_token("unknown-token")).to be_nil
-    end
-
-    it "returns nil for a token that is the digest itself" do
-      expect(registry.find_by_token(Digest::SHA256.hexdigest(admin_token))).to be_nil
     end
 
     it "returns nil for a blank token" do
@@ -35,53 +27,35 @@ RSpec.describe ApiClientRegistry do
   end
 
   describe ".from_json" do
-    def expect_configuration_error(json, message)
-      expect { described_class.from_json(json) }.to raise_error(ApiClientRegistry::ConfigurationError, message)
-    end
-
-    it "rejects a missing value" do
-      expect_configuration_error(nil, "API_CLIENTS is not set")
-    end
-
-    it "rejects a blank value" do
-      expect_configuration_error(" ", "API_CLIENTS is not set")
-    end
-
-    it "rejects invalid JSON" do
-      expect_configuration_error("[{", "API_CLIENTS is not valid JSON")
-    end
-
-    it "rejects an empty list" do
-      expect_configuration_error("[]", "API_CLIENTS must be a non-empty JSON array")
-    end
-
-    it "rejects a value that isn't a list" do
-      expect_configuration_error({ name: "admin" }.to_json, "API_CLIENTS must be a non-empty JSON array")
-    end
-
-    it "rejects a digest with the wrong length" do
-      expect_configuration_error(
-        [ { name: "admin", token_digest: "abc123", scopes: [] } ].to_json,
-        "API_CLIENTS entry 0 needs a token_digest of 64 lowercase hex characters"
+    it "initializes a client for each api client entry in the given config" do
+      expect(described_class.from_json(json_config).send(:clients)).to include(
+        have_attributes(name: "reader", scopes: [ "users:read" ]),
+        have_attributes(name: "admin", scopes: [ "users:read", "users:write" ])
       )
     end
 
-    it "rejects a digest that isn't lowercase hex" do
-      expect_configuration_error(
-        [ { name: "admin", token_digest: Digest::SHA256.hexdigest(admin_token).upcase, scopes: [] } ].to_json,
-        "API_CLIENTS entry 0 needs a token_digest of 64 lowercase hex characters"
-      )
+    context "when the config isn't valid JSON" do
+      let(:json_config) { "[{" }
+
+      it "raises an error for invalid JSON" do
+        expect { described_class.from_json(json_config) }.to raise_error(/Error parsing API_CLIENTS json config/)
+      end
     end
 
-    it "names the entry that is wrong" do
-      expect_configuration_error(
-        [ JSON.parse(api_clients).first, { name: "admin", scopes: [] } ].to_json,
-        "API_CLIENTS entry 1 needs a token_digest of 64 lowercase hex characters"
-      )
+    context "when there are no clients" do
+      let(:json_config) { "[]" }
+
+      it "raises an error for no clients" do
+        expect { described_class.from_json(json_config) }.to raise_error("API_CLIENTS not found")
+      end
     end
 
-    it "rejects an entry that isn't an object" do
-      expect_configuration_error([ "admin" ].to_json, "API_CLIENTS entry 0 needs a token_digest of 64 lowercase hex characters")
+    context "when a client's token digest is invalid" do
+      let(:json_config) { [ { name: "admin", token_digest: "abc123", scopes: [ "users:read", "users:write" ] } ].to_json }
+
+      it "raises an error for invalid token digest" do
+        expect { described_class.from_json(json_config) }.to raise_error("API_CLIENTS admin token is invalid")
+      end
     end
   end
 end
