@@ -82,7 +82,7 @@ module Api
         if allowed.map(&:to_s).include?(field.to_s)
           { code: "invalid_type", field: field, message: I18n.t("errors.messages.not_a_string") }
         else
-          { code: "unknown_field", field: field, message: "is not a recognised field" }
+          { code: "unknown_field", field: field, message: I18n.t("api.errors.unknown_field") }
         end
       end
 
@@ -92,21 +92,21 @@ module Api
 
       def render_parameter_missing(error)
         render_errors(
-          [ { code: "parameter_missing", field: error.param.to_s, message: "is required and must be a JSON object" } ],
+          [ { code: "parameter_missing", field: error.param.to_s, message: I18n.t("api.errors.parameter_missing") } ],
           status: :bad_request
         )
       end
 
       def render_malformed_json
         render_errors(
-          [ { code: "malformed_json", field: "body", message: "is not valid JSON" } ],
+          [ { code: "malformed_json", field: "body", message: I18n.t("api.errors.malformed_json") } ],
           status: :bad_request
         )
       end
 
       def render_not_found
         render_errors(
-          [ { code: "not_found", field: "id", message: "does not match an existing record" } ],
+          [ { code: "not_found", field: "id", message: I18n.t("api.errors.not_found") } ],
           status: :not_found
         )
       end
@@ -114,13 +114,13 @@ module Api
       def render_unauthorized
         response.headers["WWW-Authenticate"] = "Bearer"
         render_errors(
-          [ { code: "unauthorized", field: "authorization", message: "a valid bearer token is required" } ],
+          [ { code: "unauthorized", field: "authorization", message: I18n.t("api.errors.unauthorized") } ],
           status: :unauthorized
         )
       end
 
       def render_forbidden(scope)
-        message = scope ? "requires the #{scope} scope" : "is not granted to any scope"
+        message = scope ? I18n.t("api.errors.forbidden", required_scope: scope) : I18n.t("api.errors.forbidden_action")
         render_errors([ { code: "forbidden", field: "scope", message: } ], status: :forbidden)
       end
     end
