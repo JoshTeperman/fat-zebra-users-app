@@ -13,6 +13,9 @@ module Api
       end
       class NotFound < StandardError; end
 
+      READ_ACTIONS = %w[index show].freeze
+      WRITE_ACTIONS = %w[create update destroy].freeze
+
       rescue_from InvalidParameters, with: :render_invalid_parameters
       rescue_from ActionController::ParameterMissing, with: :render_parameter_missing
       rescue_from ActionDispatch::Http::Parameters::ParseError, with: :render_malformed_json
@@ -20,14 +23,8 @@ module Api
 
       wrap_parameters false
 
-      class_attribute :required_scopes, instance_accessor: false, default: {}
-
       before_action :authenticate!
       before_action :authorize!
-
-      def self.require_scope(scope, only:)
-        self.required_scopes = required_scopes.merge(Array(only).to_h { [ it.to_s, scope ] })
-      end
 
       private
 
@@ -37,8 +34,15 @@ module Api
       end
 
       def authorize!
-        scope = self.class.required_scopes[action_name]
+        scope = required_scope
         render_forbidden(scope) unless scope && @current_client.scopes.include?(scope)
+      end
+
+      def required_scope
+        access = if READ_ACTIONS.include?(action_name) then "read"
+        elsif WRITE_ACTIONS.include?(action_name) then "write"
+        end
+        "#{controller_name}:#{access}" if access
       end
 
       def render_data(resource, status: :ok)

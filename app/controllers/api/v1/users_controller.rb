@@ -1,9 +1,6 @@
 module Api
   module V1
     class UsersController < BaseController
-      require_scope "users:read", only: :index
-      require_scope "users:write", only: %i[create update]
-
       def index
         users = user_repository.all
         render_data(users.map { UserSerializer.call(it) })
