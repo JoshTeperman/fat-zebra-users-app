@@ -20,13 +20,25 @@ module Api
 
       wrap_parameters false
 
+      class_attribute :required_scopes, instance_accessor: false, default: {}
+
       before_action :authenticate!
+      before_action :authorize!
+
+      def self.require_scope(scope, only:)
+        self.required_scopes = required_scopes.merge(Array(only).to_h { [ it.to_s, scope ] })
+      end
 
       private
 
       def authenticate!
-        client = authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
-        render_unauthorized unless client
+        @current_client = authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
+        render_unauthorized unless @current_client
+      end
+
+      def authorize!
+        scope = self.class.required_scopes[action_name]
+        render_forbidden(scope) unless scope && @current_client.scopes.include?(scope)
       end
 
       def render_data(resource, status: :ok)
@@ -98,6 +110,11 @@ module Api
           [ { code: "unauthorized", field: "authorization", message: "a valid bearer token is required" } ],
           status: :unauthorized
         )
+      end
+
+      def render_forbidden(scope)
+        message = scope ? "requires the #{scope} scope" : "is not granted to any scope"
+        render_errors([ { code: "forbidden", field: "scope", message: } ], status: :forbidden)
       end
     end
   end
