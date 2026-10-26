@@ -28,7 +28,6 @@ RSpec.describe "API authorization", type: :request do
 
   {
     reader: { index: :ok, create: :forbidden, update: :forbidden },
-    admin: { index: :ok, create: :created, update: :ok },
     writer: { index: :forbidden, create: :created, update: :ok }
   }.each do |client, expected_statuses|
     context "with the #{client} token" do

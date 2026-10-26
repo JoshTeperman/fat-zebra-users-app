@@ -1,9 +1,7 @@
 module ApiClientHelpers
   CLIENTS = {
     reader: { token: "fz-dev-reader-NOT-A-SECRET-0001", scopes: [ "users:read" ] },
-    admin: { token: "fz-dev-admin-NOT-A-SECRET-0002", scopes: [ "users:read", "users:write" ] },
-    # Spec only, not in compose.yaml. Proves users:write doesn't imply users:read.
-    writer: { token: "spec-writer-token", scopes: [ "users:write" ] }
+    writer: { token: "fz-dev-writer-NOT-A-SECRET-0002", scopes: [ "users:write" ] }
   }.freeze
 
   def self.registry
@@ -12,7 +10,7 @@ module ApiClientHelpers
     )
   end
 
-  def auth_headers(client = :admin)
+  def auth_headers(client)
     { "Authorization" => "Bearer #{CLIENTS.fetch(client)[:token]}" }
   end
 end

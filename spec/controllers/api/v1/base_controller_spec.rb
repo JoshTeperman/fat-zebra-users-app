@@ -14,7 +14,7 @@ RSpec.describe Api::V1::BaseController, type: :controller do
       get "widgets/export" => "api/v1/base#export"
     end
     allow(ApiClientRegistry).to receive(:instance).and_return(ApiClientHelpers.registry)
-    request.headers["Authorization"] = "Bearer #{ApiClientHelpers::CLIENTS[:admin][:token]}"
+    request.headers["Authorization"] = "Bearer #{ApiClientHelpers::CLIENTS[:reader][:token]}"
   end
 
   it "requires the scope named after the controller and action", :aggregate_failures do

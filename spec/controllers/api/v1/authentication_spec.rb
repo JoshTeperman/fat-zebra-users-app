@@ -22,7 +22,7 @@ RSpec.describe "API authentication", type: :request do
 
     context "with a valid token sent with the Basic scheme" do
       let(:headers) do
-        { "Authorization" => ActionController::HttpAuthentication::Basic.encode_credentials("admin", ApiClientHelpers::CLIENTS[:admin][:token]) }
+        { "Authorization" => ActionController::HttpAuthentication::Basic.encode_credentials("reader", ApiClientHelpers::CLIENTS[:reader][:token]) }
       end
 
       it_behaves_like "an unauthorized request"
