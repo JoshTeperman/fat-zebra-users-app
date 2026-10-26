@@ -215,3 +215,13 @@ These are deliberate, to keep the scope close to the brief's time guide:
 - Send `WWW-Authenticate: Bearer error="insufficient_scope"` with a 403.
 - Add a `show` route and a health check route.
 - Add the React client, which the brief lists as a stretch goal.
+
+## How this was built
+
+The author used AI tools throughout.
+
+- The author made the design decisions, wrote parts of the code, and reviewed and merged every change.
+- Claude Code (Anthropic's Claude) wrote most of the code, the specs and this README, under the author's direction and in small pull requests.
+- Grok helped plan the work and wrote the step-by-step plans that Claude Code worked from.
+
+Commits that Claude Code created end with a `Co-Authored-By: Claude` trailer. Claude Code also wrote code in some commits that the author made. Any changes Grok makes are in their own commits.
