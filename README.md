@@ -34,7 +34,7 @@ API=http://localhost:3000/api/v1/users
 curl -i -X POST http://localhost:3000/api/v1/users \
   -H "Authorization: Bearer $WRITER" \
   -H "Content-Type: application/json" \
-  -d '{"user": {"first_name": "Mark", "last_name": "Hamil", "date_of_birth": "1990-12-10"}}'
+  -d '{"user": {"first_name": "Mark", "last_name": "Hamill", "date_of_birth": "1990-12-10"}}'
 
 # List users (200)
 curl -i http://localhost:3000/api/v1/users \
@@ -95,7 +95,7 @@ Request bodies wrap attributes in `user`. `POST` needs every field, and `PATCH` 
 Success responses wrap the result in `data`:
 
 ```json
-{"data": {"id": 1, "first_name": "Mark", "last_name": "Hamil", "date_of_birth": "1990-12-10"}}
+{"data": {"id": 1, "first_name": "Mark", "last_name": "Hamill", "date_of_birth": "1990-12-10"}}
 ```
 
 Errors return a list, and each error has a stable `code`, the `field` it concerns and a `message`:
@@ -136,22 +136,22 @@ flowchart LR
 
 | Decision | Why |
 | --- | --- |
-| In-memory datastore | `User` is a plain ActiveModel class with validations & attributes, and Controllers access an in-memory store
-`User` is a plain ActiveModel class, which still gives typed attributes and validations. Controllers only call `update`, `create`, `all` on the `UserRepository` instance, so a store shared across processes, such as Redis, could replace it without changing the controllers. With Postgres/MySQL etc, I'd follow the Rails convention instead: Active Record models, and no repository. |
-| `UserRepository` with Mutex lock | Puma runs on a single process and serves requests on several threads, therefore the Mutex lock stops concurrent conflicting writes on the Users store. Also records are stored as frozen hashes and returned in a fresh class, so callers can't change stored data by accident. |
-| Auth: per-client opaque bearer tokens | The server looks each token up in its client list, and revoking one means removing its entry. JWTs need an issuing step and can't be revoked early. OAuth needs an authorisation server. Basic would work, but Bearer is the header OAuth uses. |
+| In-memory datastore | `User` is a plain ActiveModel class, which still gives typed attributes and validations. Controllers only call `update`, `create`, `all` on the `UserRepository` instance, so a store shared across processes, such as Redis, could replace it without changing the controllers. With Postgres/MySQL etc, I'd follow the Rails convention instead: Active Record models, and no repository. |
+| `UserRepository` with Mutex lock | Puma runs on a single process and serves requests on several threads, therefore the Mutex lock stops concurrent conflicting writes on the Users store. Also records are stored as frozen hashes and returned as new `User` objects, so callers can't change stored data by accident. |
+| Auth: per-client opaque bearer tokens | The server looks each token up in its client list, and revoking one means removing its entry. JWTs need an issuing step and can't be revoked without a denylist. OAuth needs an authorisation server. Basic would work, but Bearer is the header OAuth uses. |
 | No token rotation mechanism | Tokens are server-side config, so currently can be rotated with config change and a redeploy. Possible to add with extension. |
 | Scopes derived from controller and action | `index` and `show` need `<controller>:read`, and `create`, `update` and `destroy` need `<controller>:write`. Any other action gets 403. A new controller is protected without any setup. |
+| Fail closed at boot | The app refuses to start if `API_CLIENTS` is missing, isn't JSON, or holds a digest that isn't 64 hex characters. |
 | Unknown fields rejected with 422 | The client learns immediately when its request doesn't match the API. Silently dropping fields would hide typos and attempts to set `id`. |
-| Integer ids | Repository assigns ids in order so list comes back in order with no additional timestamps are required to sort. Adds a cost that user count is discoverable. |
+| Integer ids | Repository assigns ids in order so users list comes back in order. No additional timestamps are required to sort. Adds a cost that user count is discoverable. |
 | No `show` route, no Location header | The brief asks for `index`, `create` and `patch` endpoints, so no `show` url to point to with a `Location` header for 201 responses. |
 | Development mode in Docker, port on `127.0.0.1` | Production mode needs `config/master.key`, which a cloned repo doesn't have. Binding to loopback keeps the plain-HTTP dev server off the network. |
-| No CSRF protection | Credentials travel only in the headers, never a cookie, so CSRF doesn't apply |
+| No CSRF protection | Credentials travel only in the headers, never a cookie, so CSRF doesn't apply. |
 
 ## Trade-offs accepted
 
 - Data is lost on restart, and the app can't scale beyond one process.
-- Changing a client means editing `compose.yaml` and restarting. Tokens don't expire.
+- Changing a client means editing `compose.yaml` and rerunning `docker compose up`. Tokens don't expire.
 - Any `users:write` client can update any user. There's no per-record authorisation.
 - Renaming a controller renames its scopes.
 - Integer ids reveal how many users exist.
@@ -160,14 +160,12 @@ flowchart LR
 ## With more time
 
 - A database and Active Record models in place of the repository.
-- Clients in a database table, or tokens in a secrets manager, with rotation endpoint.
-- OAuth 2.0 client credentials with short-lived tokens, if third parties need to get their own tokens or user login is added. Clients already send `Authorization: Bearer`, so only the server side changes.
+- A rotation endpoint, with tokens stored in a secrets manager, or a token table.
 - TLS terminated at a proxy, with `force_ssl` as a backstop.
 - Rate limiting.
 - A `show` route with a `Location` header.
-- A health check route.
-- A Reach SPA frontend
+- A React SPA frontend.
 
 ## How this was built
 
-I made the design decisions, wrote or co-wrote the code with Claude, and reviewed and merged every pull request. Claude worked with [my execution-time skill](https://github.com/JoshTeperman/agent-skills-sync/tree/main/skills/execution-time), a custom fork of poteto-mode, from [Lauren Tan's pstack plugin](https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md), and followed a plan written in conjunction with Grokbot.
+I made the design decisions, wrote or co-wrote the code with Claude, and reviewed and merged every pull request. Claude worked with [my execution-time skill](https://github.com/JoshTeperman/agent-skills-sync/tree/main/skills/execution-time), a custom fork of poteto-mode, from [Lauren Tan's pstack plugin](https://github.com/cursor/plugins/blob/main/pstack/skills/poteto-mode/SKILL.md), and followed a plan written in conjunction with Grok.
