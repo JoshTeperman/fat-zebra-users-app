@@ -2,4 +2,4 @@
 ruby = "4.0.8"
 
 [env]
-API_CLIENTS = '[{"name": "reader", "token_digest": "2594d213b55a4f33a0ee179cb039e19855ef0e839751b1029341c5a1f8ef944e", "scopes": ["users:read"]}, {"name": "admin", "token_digest": "f39649aede36b2c21b06508ad2d8aad475f6738aa609270fd03c420c4c9af380", "scopes": ["users:read", "users:write"]}]'
+API_CLIENTS = '[{"name": "reader", "token_digest": "2594d213b55a4f33a0ee179cb039e19855ef0e839751b1029341c5a1f8ef944e", "scopes": ["users:read"]}, {"name": "writer", "token_digest": "4e9f249f842889f83ade044ba3081f836191f84482194add7add6957637c7062", "scopes": ["users:write"]}]'

@@ -5,3 +5,12 @@ en:
       invalid_format: "must be a date in YYYY-MM-DD format"
       in_the_future: "can't be in the future"
       too_old: "must be on or after %{date}"
+  api:
+    errors:
+      unauthorized: "a valid bearer token is required"
+      forbidden: "requires the %{required_scope} scope"
+      forbidden_action: "is not granted to any scope"
+      parameter_missing: "is required and must be a JSON object"
+      malformed_json: "is not valid JSON"
+      unknown_field: "is not a recognised field"
+      not_found: "does not match an existing record"

@@ -13,6 +13,9 @@ module Api
       end
       class NotFound < StandardError; end
 
+      READ_ACTIONS = %w[index show].freeze
+      WRITE_ACTIONS = %w[create update destroy].freeze
+
       rescue_from InvalidParameters, with: :render_invalid_parameters
       rescue_from ActionController::ParameterMissing, with: :render_parameter_missing
       rescue_from ActionDispatch::Http::Parameters::ParseError, with: :render_malformed_json
@@ -21,12 +24,28 @@ module Api
       wrap_parameters false
 
       before_action :authenticate!
+      before_action :authorize!
 
       private
 
+      def auth_client
+        @auth_client ||= authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
+      end
+
       def authenticate!
-        client = authenticate_with_http_token { |token| ApiClientRegistry.instance.find_by_token(token) }
-        render_unauthorized unless client
+        render_unauthorized unless auth_client
+      end
+
+      def authorize!
+        scope = required_scope
+        render_forbidden(scope) unless scope && auth_client.scopes.include?(scope)
+      end
+
+      def required_scope
+        access = if READ_ACTIONS.include?(action_name) then "read"
+        elsif WRITE_ACTIONS.include?(action_name) then "write"
+        end
+        "#{controller_name}:#{access}" if access
       end
 
       def render_data(resource, status: :ok)
@@ -63,7 +82,7 @@ module Api
         if allowed.map(&:to_s).include?(field.to_s)
           { code: "invalid_type", field: field, message: I18n.t("errors.messages.not_a_string") }
         else
-          { code: "unknown_field", field: field, message: "is not a recognised field" }
+          { code: "unknown_field", field: field, message: I18n.t("api.errors.unknown_field") }
         end
       end
 
@@ -73,21 +92,21 @@ module Api
 
       def render_parameter_missing(error)
         render_errors(
-          [ { code: "parameter_missing", field: error.param.to_s, message: "is required and must be a JSON object" } ],
+          [ { code: "parameter_missing", field: error.param.to_s, message: I18n.t("api.errors.parameter_missing") } ],
           status: :bad_request
         )
       end
 
       def render_malformed_json
         render_errors(
-          [ { code: "malformed_json", field: "body", message: "is not valid JSON" } ],
+          [ { code: "malformed_json", field: "body", message: I18n.t("api.errors.malformed_json") } ],
           status: :bad_request
         )
       end
 
       def render_not_found
         render_errors(
-          [ { code: "not_found", field: "id", message: "does not match an existing record" } ],
+          [ { code: "not_found", field: "id", message: I18n.t("api.errors.not_found") } ],
           status: :not_found
         )
       end
@@ -95,9 +114,14 @@ module Api
       def render_unauthorized
         response.headers["WWW-Authenticate"] = "Bearer"
         render_errors(
-          [ { code: "unauthorized", field: "authorization", message: "a valid bearer token is required" } ],
+          [ { code: "unauthorized", field: "authorization", message: I18n.t("api.errors.unauthorized") } ],
           status: :unauthorized
         )
+      end
+
+      def render_forbidden(scope)
+        message = scope ? I18n.t("api.errors.forbidden", required_scope: scope) : I18n.t("api.errors.forbidden_action")
+        render_errors([ { code: "forbidden", field: "scope", message: } ], status: :forbidden)
       end
     end
   end
