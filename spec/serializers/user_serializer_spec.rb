@@ -6,8 +6,8 @@ RSpec.describe UserSerializer do
   let(:user) do
     User.new(
       id: 1,
-      first_name: "Ada",
-      last_name: "Lovelace",
+      first_name: "Mark",
+      last_name: "Hamill",
       date_of_birth: "1990-12-10"
     )
   end
@@ -15,8 +15,8 @@ RSpec.describe UserSerializer do
   it "serializes the user's attributes" do
     expect(serialized).to eq(
       id: 1,
-      first_name: "Ada",
-      last_name: "Lovelace",
+      first_name: "Mark",
+      last_name: "Hamill",
       date_of_birth: "1990-12-10"
     )
   end

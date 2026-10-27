@@ -5,8 +5,8 @@ RSpec.describe User do
 
   let(:attributes) do
     {
-      first_name: "Ada",
-      last_name: "Lovelace",
+      first_name: "Mark",
+      last_name: "Hamill",
       date_of_birth: "1990-12-10"
     }
   end
@@ -16,8 +16,8 @@ RSpec.describe User do
   it "has expected attributes" do
     expect(user).to have_attributes(
       id: nil,
-      first_name: "Ada",
-      last_name: "Lovelace",
+      first_name: "Mark",
+      last_name: "Hamill",
       date_of_birth: Date.new(1990, 12, 10)
     )
   end
@@ -46,10 +46,10 @@ RSpec.describe User do
 
   describe "normalization" do
     context "when names have surrounding whitespace" do
-      let(:attributes) { super().merge(first_name: "  Ada ", last_name: " Lovelace  ") }
+      let(:attributes) { super().merge(first_name: "  Mark ", last_name: " Hamill  ") }
 
       it "strips the whitespace" do
-        expect(user).to have_attributes(first_name: "Ada", last_name: "Lovelace")
+        expect(user).to have_attributes(first_name: "Mark", last_name: "Hamill")
       end
     end
   end
